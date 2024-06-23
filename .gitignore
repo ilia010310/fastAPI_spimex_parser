@@ -1,6 +1,6 @@
 
+.env-non-dev
 venv
 .env
 .idea
-.env-non-dev
-.pytest_cache
+**/.pytest_cache/
