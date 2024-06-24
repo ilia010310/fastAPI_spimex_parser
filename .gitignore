@@ -10,3 +10,4 @@ __pycache__/
 # pytest cache
 **/.pytest_cache/
 *pyc
+**/__pycache__/
