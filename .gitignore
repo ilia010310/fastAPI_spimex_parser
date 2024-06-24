@@ -3,11 +3,11 @@
 venv
 .env
 .idea
-# Python cache
 __pycache__/
 *.py[cod]
 
-# pytest cache
 **/.pytest_cache/
-*pyc
+*.pyc
 **/__pycache__/
+.DS_Store
+.idea/
