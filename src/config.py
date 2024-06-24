@@ -18,6 +18,9 @@ DB_PORT_TEST = os.environ.get('DB_PORT_TEST')
 DB_USER_TEST = os.environ.get('DB_USER_TEST')
 DB_PASS_TEST = os.environ.get('DB_PASS_TEST')
 
+REDIS_PORT = os.environ.get('REDIS_PORT')
+REDIS_HOST = os.environ.get('REDIS_HOST')
+
 logging.basicConfig(
     level=logging.ERROR,
     filename="../../py_log.log", filemode="a",
@@ -43,7 +46,7 @@ class Settings(BaseSettings):
         # postgresql+psycopg://postgres:postgres@localhost:5432/sa
         return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
-    model_config = SettingsConfigDict(env_file="../.env")
+    model_config = SettingsConfigDict(env_file="../.env-dev")
 
 
 settings = Settings()

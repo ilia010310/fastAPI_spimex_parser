@@ -1,7 +1,8 @@
 
-.env-non-dev
-venv
 .env
+venv
+.env-dev
+.env-dev
 .idea
 __pycache__/
 *.py[cod]

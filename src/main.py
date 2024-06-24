@@ -8,11 +8,13 @@ from redis import asyncio as aioredis
 
 from fastapi import FastAPI
 
+from config import REDIS_HOST, REDIS_PORT
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Инициализация при старте
-    redis = aioredis.from_url("redis://localhost", encoding="utf8", decode_responses=True)
+    redis = aioredis.from_url(f"redis://{REDIS_HOST}:{REDIS_PORT}", encoding="utf8", decode_responses=True)
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     # yield используется для разделения инициализации и завершения
     yield
