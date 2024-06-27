@@ -11,26 +11,26 @@ class IUnitOfWork(ABC):
 
     @abstractmethod
     def __init__(self):
-        ...
+        raise NotImplementedError
 
     @abstractmethod
     async def __aenter__(self):
-        ...
+        raise NotImplementedError
 
     @abstractmethod
     async def __aexit__(self, *args):
-        ...
+        raise NotImplementedError
 
     @abstractmethod
     async def commit(self):
-        ...
+        raise NotImplementedError
 
     @abstractmethod
     async def rollback(self):
-        ...
+        raise NotImplementedError
 
 
-class UnitOfWork:
+class UnitOfWork(IUnitOfWork):
     def __init__(self):
         self.session_factory = async_session
 
@@ -38,8 +38,11 @@ class UnitOfWork:
         self.session = self.session_factory()
         self.trading_results = TradingResultsRepository(self.session)
 
-    async def __aexit__(self, *args):
-        await self.rollback()
+    async def __aexit__(self, exc_type, *args):
+        if not exc_type:
+            await self.commit()
+        else:
+            await self.rollback()
         await self.session.close()
 
     async def commit(self):

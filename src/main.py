@@ -29,7 +29,7 @@ for router in all_routers:
     app.include_router(router)
 
 origins = [
-    "http://localhost:7112",
+    "http://localhost:8000",
 ]
 
 app.add_middleware(

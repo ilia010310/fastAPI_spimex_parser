@@ -1,11 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TradingResultSchema(BaseModel):
-    id: int
     exchange_product_id: str
     exchange_product_name: str
     oil_id: str
@@ -17,5 +16,4 @@ class TradingResultSchema(BaseModel):
     count: int
     date: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

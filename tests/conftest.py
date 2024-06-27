@@ -1,30 +1,28 @@
-import asyncio
 from typing import AsyncGenerator
-
+import asyncio
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 from src.db.database import get_async_session, Base
 
+from src.main import app
 from src.config import (DB_HOST_TEST, DB_NAME_TEST, DB_PASS_TEST, DB_PORT_TEST,
                         DB_USER_TEST)
-from src.main import app
 
 # DATABASE
 DATABASE_URL_TEST = f"postgresql+asyncpg://{DB_USER_TEST}:{DB_PASS_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
 REDIS_URL = "redis://localhost:6379"
 
-engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool, echo=True)
-
-
-async_session_maker = sessionmaker(
-    bind=engine_test,
-    class_=AsyncSession,
-    expire_on_commit=False
+engine_test = create_async_engine(
+    url=DATABASE_URL_TEST,
+    poolclass=NullPool,
+    echo=True,
+    pool_pre_ping=True,
 )
+async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 Base.metadata.bind = engine_test
 
 
@@ -36,28 +34,39 @@ async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
 app.dependency_overrides[get_async_session] = override_get_async_session
 
 
-@pytest.fixture(autouse=True, scope='session')
+@pytest.fixture(autouse=True, scope="session")
 async def prepare_database():
+    # Привязка метаданных к тестовому движку
+    Base.metadata.bind = engine_test
+
     async with engine_test.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    async with engine_test.begin() as conn:
+        print("Подключение к тестовой базе данных")
         await conn.run_sync(Base.metadata.drop_all)
+        print("Удалены все таблицы")
+        await conn.run_sync(Base.metadata.create_all)
+        print("Созданы все таблицы")
+
+    yield
+
+    # async with engine_test.begin() as conn:
+    #     print("Удаление всех таблиц в конце тестов")
+    #     await conn.run_sync(Base.metadata.drop_all)
+    #     print("Все таблицы удалены")
 
 
-# SETUP
-@pytest.fixture(scope='session')
-def event_loop(request):
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# @pytest.fixture(scope='session')
+# def event_loop(request):
+#     """Create an instance of the default event loop for each test case."""
+#     loop = asyncio.get_event_loop_policy().new_event_loop()
+#     yield loop
+#     loop.close()
 
 
 client = TestClient(app)
+transport = ASGITransport(app=app)
 
 
 @pytest.fixture(scope="session")
 async def ac() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

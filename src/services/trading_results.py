@@ -1,13 +1,13 @@
-from typing import Sequence
+import fastapi
 
-from models.trading_results import SpimexTradingResults
+from schemas.trading_result import TradingResultSchema
 from utils.unitofwork import IUnitOfWork
 
 
 class TradingResults:
-    async def get_all_last_trading_dates(self, uow: IUnitOfWork) -> list:
+    async def get_all_last_trading_dates(self, uow: IUnitOfWork) -> list | fastapi.HTTPException:
         async with uow:
-            result: list = await uow.trading_results.all_dates()
+            result: list | fastapi.HTTPException = await uow.trading_results.all_dates()
             return result
 
     async def get_dynamics(
@@ -47,4 +47,9 @@ class TradingResults:
                 delivery_basis_id,
                 page,
                 page_size)
-            return result
+        return result
+
+    async def add_one(self, data: TradingResultSchema, uow: IUnitOfWork) -> int:
+        async with uow:
+            result = await uow.trading_results.add_one(dict(data))
+        return result

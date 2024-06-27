@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Query
 
-from typing import Optional, Sequence
+from typing import Optional
 
 from fastapi_cache.decorator import cache
-from sqlalchemy import select
+from starlette.responses import JSONResponse
 
 from api.dependencies import UOWDep
-from models.trading_results import SpimexTradingResults
+from schemas.trading_result import TradingResultSchema
 from services.trading_results import TradingResults
 from utils.cache_time import get_expire_time
 
@@ -14,6 +14,17 @@ router = APIRouter(
     prefix="/trading",
     tags=["Trading"]
 )
+
+
+@router.post("")
+async def add_trading_result(
+        new_result: TradingResultSchema,
+        uow: UOWDep
+) -> dict:
+    result = await TradingResults().add_one(new_result, uow)
+    return {"status": "success",
+            "result": result,
+            "message": "Trading item created successfully"}
 
 
 @router.get("/last_dates/")
@@ -33,9 +44,9 @@ async def get_dynamics(
         uow: UOWDep,
         start_date: str,
         end_date: str,
-        oil_id: Optional[int] = None,
-        delivery_type_id: Optional[int] = None,
-        delivery_basis_id: Optional[int] = None,
+        oil_id: Optional[str] = None,
+        delivery_type_id: Optional[str] = None,
+        delivery_basis_id: Optional[str] = None,
         page: int = Query(1, ge=1),
         page_size: int = Query(10, ge=1, le=100),
 
