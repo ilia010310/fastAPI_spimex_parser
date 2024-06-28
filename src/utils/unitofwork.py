@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Type
 
-from db.database import async_session
-from repositories.trading_results import TradingResultsRepository
+from src.db.database import async_session
+from src.repositories.trading_results import TradingResultsRepository
 
 
 # https://github1s.com/cosmicpython/code/tree/chapter_06_uow

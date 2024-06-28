@@ -1,7 +1,7 @@
 import fastapi
 
-from schemas.trading_result import TradingResultSchema
-from utils.unitofwork import IUnitOfWork
+from src.schemas.trading_result import TradingResultSchema
+from src.utils.unitofwork import IUnitOfWork
 
 
 class TradingResults:

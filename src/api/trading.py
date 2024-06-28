@@ -5,10 +5,10 @@ from typing import Optional
 from fastapi_cache.decorator import cache
 from starlette.responses import JSONResponse
 
-from api.dependencies import UOWDep
-from schemas.trading_result import TradingResultSchema
-from services.trading_results import TradingResults
-from utils.cache_time import get_expire_time
+from src.api.dependencies import UOWDep
+from src.schemas.trading_result import TradingResultSchema
+from src.services.trading_results import TradingResults
+
 
 router = APIRouter(
     prefix="/trading",
@@ -28,7 +28,7 @@ async def add_trading_result(
 
 
 @router.get("/last_dates/")
-@cache(expire=get_expire_time())
+# @cache(expire=get_expire_time())
 async def get_last_trading_dates(
         uow: UOWDep
 ) -> list:
@@ -38,8 +38,9 @@ async def get_last_trading_dates(
     return all_dates
 
 
+
 @router.get("/dynamics/")
-@cache(expire=get_expire_time())
+# @cache(expire=get_expire_time())
 async def get_dynamics(
         uow: UOWDep,
         start_date: str,
@@ -67,7 +68,7 @@ async def get_dynamics(
 
 
 @router.get("/results/")
-@cache(expire=get_expire_time())
+# @cache(expire=get_expire_time())
 async def get_trading_results(
         uow: UOWDep,
         oil_id: Optional[str] = None,

@@ -4,13 +4,13 @@ from typing import Annotated
 from sqlalchemy import DateTime, Index
 from sqlalchemy.orm import mapped_column, Mapped
 
-from db.database import Base
-from schemas.trading_result import TradingResultSchema
+from src.models.base import BaseModel
+from src.schemas.trading_result import TradingResultSchema
 
 int_pk = Annotated[int, mapped_column(primary_key=True)]
 
 
-class SpimexTradingResults(Base):
+class SpimexTradingResults(BaseModel):
     __tablename__ = 'spimex_trading_results'
 
     id: Mapped[int_pk]

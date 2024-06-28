@@ -2,7 +2,6 @@
 .env
 venv
 .env-dev
-.env-dev
 .test.env
 .idea
 __pycache__/
@@ -12,4 +11,3 @@ __pycache__/
 *.pyc
 **/__pycache__/
 .DS_Store
-.idea/

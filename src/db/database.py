@@ -1,38 +1,40 @@
-from typing import Annotated, AsyncGenerator
-from sqlalchemy import String
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
-from config import settings
+from typing import AsyncGenerator
+from uuid import uuid4
 
-async_engine = create_async_engine(
-    url=settings.DATABASE_URL_asyncpg,
-    echo=True,
-    pool_pre_ping=True,
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    create_async_engine,
+    async_sessionmaker,
+    AsyncConnection
 )
 
-async_session = async_sessionmaker(async_engine)
+from src.config import settings
 
-str_256 = Annotated[str, 256]
-
-
-class Base(DeclarativeBase):
-    type_annotation_map = {
-        str_256: String(256)
+async_engine = create_async_engine(
+    url=settings.DB_URL,
+    echo=True,
+    future=True,
+    pool_size=50,
+    max_overflow=100,
+    connect_args={
+        'prepared_statement_name_func': lambda: f'__asyncpg_{uuid4()}__',
     }
+)
 
-    repr_cols_num = 3
-    repr_cols = tuple()
-
-    def __repr__(self):
-        """Relationships не используются в repr(), т.к. могут вести к неожиданным подгрузкам"""
-        cols = []
-        for idx, col in enumerate(self.__table__.columns.keys()):
-            if col in self.repr_cols or idx < self.repr_cols_num:
-                cols.append(f"{col}={getattr(self, col)}")
-
-        return f"<{self.__class__.__name__} {', '.join(cols)}>"
+async_session = async_sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
+)
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
+
+
+async def get_async_connection() -> AsyncGenerator[AsyncConnection, None]:
+    async with async_engine.begin() as conn:
+        yield conn

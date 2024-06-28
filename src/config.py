@@ -1,54 +1,32 @@
-import logging
 import os
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-load_dotenv()
-
-DB_NAME = os.environ.get('DB_NAME')
-DB_HOST = os.environ.get('DB_HOST')
-DB_PORT = os.environ.get('DB_PORT')
-DB_USER = os.environ.get('DB_USER')
-DB_PASS = os.environ.get('DB_PASS')
-
-DB_NAME_TEST = os.environ.get('DB_NAME_TEST')
-DB_HOST_TEST = os.environ.get('DB_HOST_TEST')
-DB_PORT_TEST = os.environ.get('DB_PORT_TEST')
-DB_USER_TEST = os.environ.get('DB_USER_TEST')
-DB_PASS_TEST = os.environ.get('DB_PASS_TEST')
-
-REDIS_PORT = os.environ.get('REDIS_PORT')
-REDIS_HOST = os.environ.get('REDIS_HOST')
-
-logging.basicConfig(
-    level=logging.ERROR,
-    filename="../../py_log.log", filemode="a",
-    format="%(asctime)s %(levelname)s %(message)s",
-)
 
 
 class Settings(BaseSettings):
+    MODE: str
 
     DB_HOST: str
     DB_PORT: int
     DB_USER: str
     DB_PASS: str
     DB_NAME: str
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_PASSWORD: str
 
     @property
-    def DATABASE_URL_asyncpg(self):
-        # postgresql+asyncpg://postgres:postgres@localhost:5432/sa
+    def DB_URL(self):
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
-    def DATABASE_URL_psycopg(self):
-        # DSN
-        # postgresql+psycopg://postgres:postgres@localhost:5432/sa
-        return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+    def REDIS_URL(self):
+        return f'redis://{self.REDIS_PASSWORD}{self.REDIS_HOST}:{self.REDIS_PORT}'
 
-    model_config = SettingsConfigDict(env_file="../.env-dev")
+    model_config = SettingsConfigDict(env_file='../.env')
 
 
+load_dotenv(find_dotenv('.env'))
 settings = Settings()
-

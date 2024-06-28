@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import insert, select, update, distinct, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from schemas.trading_result import TradingResultSchema
+from src.schemas.trading_result import TradingResultSchema
 
 
 class AbstractRepository(ABC):

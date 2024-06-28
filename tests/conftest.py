@@ -1,68 +1,87 @@
-from typing import AsyncGenerator
 import asyncio
+from typing import AsyncGenerator
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine, async_sessionmaker
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
-from src.db.database import get_async_session, Base
+from httpx import ASGITransport, AsyncClient
 
-from src.main import app
-from src.config import (DB_HOST_TEST, DB_NAME_TEST, DB_PASS_TEST, DB_PORT_TEST,
-                        DB_USER_TEST)
-
-# DATABASE
-DATABASE_URL_TEST = f"postgresql+asyncpg://{DB_USER_TEST}:{DB_PASS_TEST}@{DB_HOST_TEST}:{DB_PORT_TEST}/{DB_NAME_TEST}"
-REDIS_URL = "redis://localhost:6379"
-
-engine_test = create_async_engine(
-    url=DATABASE_URL_TEST,
-    poolclass=NullPool,
-    echo=True,
-    pool_pre_ping=True,
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    create_async_engine,
+    AsyncEngine,
+    async_sessionmaker
 )
-async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
-Base.metadata.bind = engine_test
+
+from src.models.base import BaseModel
+from src.main import app
+from src.config import settings
 
 
-async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
-        yield session
+@pytest.fixture(scope="session")
+def async_engine() -> AsyncEngine:
+    _async_engine = create_async_engine(
+        url=settings.DB_URL,
+        echo=True,
+        future=True,
+        pool_size=50,
+        max_overflow=100,
+        connect_args={
+            "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4()}__",
+        },
+    )
+    return _async_engine
 
 
-app.dependency_overrides[get_async_session] = override_get_async_session
+@pytest.fixture(scope="session")
+def async_session_maker(async_engine):
+    _async_session_maker = async_sessionmaker(
+        bind=async_engine,
+        class_=AsyncSession,
+        autoflush=False,
+        autocommit=False,
+        expire_on_commit=False,
+    )
+    return _async_session_maker
 
 
-@pytest.fixture(autouse=True, scope="session")
-async def prepare_database():
-    # Привязка метаданных к тестовому движку
-    Base.metadata.bind = engine_test
+@pytest.fixture(scope="session", autouse=True)
+def event_loop():
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
 
-    async with engine_test.begin() as conn:
-        print("Подключение к тестовой базе данных")
-        await conn.run_sync(Base.metadata.drop_all)
-        print("Удалены все таблицы")
-        await conn.run_sync(Base.metadata.create_all)
-        print("Созданы все таблицы")
 
+@pytest.fixture(scope="session", autouse=True)
+async def setup_db(async_engine):
+    assert settings.MODE == "TEST"
+    print(settings.MODE)
+    print("Start session!!!")
+    async with async_engine.begin() as db_conn:
+        print('Drop all tables')
+        await db_conn.run_sync(BaseModel.metadata.drop_all)
+        print('Create all tables')
+        await db_conn.run_sync(BaseModel.metadata.create_all)
     yield
-
-    # async with engine_test.begin() as conn:
-    #     print("Удаление всех таблиц в конце тестов")
-    #     await conn.run_sync(Base.metadata.drop_all)
-    #     print("Все таблицы удалены")
-
-
-# @pytest.fixture(scope='session')
-# def event_loop(request):
-#     """Create an instance of the default event loop for each test case."""
-#     loop = asyncio.get_event_loop_policy().new_event_loop()
-#     yield loop
-#     loop.close()
+    # print("End session!!!")
+    # async with async_engine.begin() as db_conn:
+    #     print('Drop all tables')
+    #     await db_conn.run_sync(BaseModel.metadata.drop_all)
 
 
-client = TestClient(app)
+@pytest.fixture(scope="function")
+async def async_session(async_session_maker) -> AsyncSession:
+    async with async_session_maker() as _async_session:
+        yield _async_session
+
+
+@pytest.fixture(scope="session")
+def client() -> TestClient:
+    with TestClient(app) as c:
+        yield c
+
+
 transport = ASGITransport(app=app)
 
 

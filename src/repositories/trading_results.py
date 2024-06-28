@@ -1,5 +1,5 @@
-from models.trading_results import SpimexTradingResults
-from utils.repository import SQLAlchemyRepository
+from src.models.trading_results import SpimexTradingResults
+from src.utils.repository import SQLAlchemyRepository
 
 
 class TradingResultsRepository(SQLAlchemyRepository):
